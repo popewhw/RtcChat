@@ -1,0 +1,3 @@
+include ':rtcchat'
+include ':app'
+rootProject.name = "RtcChat"
