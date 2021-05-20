@@ -251,6 +251,7 @@ public class Peer implements SdpObserver, PeerConnection.Observer {
     //-------------SdpObserver--------------------
     @Override
     public void onCreateSuccess(SessionDescription origSdp) {
+        //PeerConnection createOffer或createAnswer成功后回调
         Log.d(TAG, "sdp创建成功       " + origSdp.type);
         String sdpString = origSdp.description;
         final SessionDescription sdp = new SessionDescription(origSdp.type, sdpString);
@@ -261,6 +262,7 @@ public class Peer implements SdpObserver, PeerConnection.Observer {
 
     @Override
     public void onSetSuccess() {
+        //PeerConnection setLocalDescription成功后回调
         Log.d(TAG, "sdp连接成功   " + pc.signalingState().toString());
         if (pc == null) return;
         // 发送者

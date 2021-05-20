@@ -204,7 +204,8 @@ public class Peer implements SdpObserver, PeerConnection.Observer {
 
     @Override
     public void onIceCandidate(IceCandidate candidate) {
-        // 发送IceCandidate
+        // PeerConnection实例后，当网络候可用时，回调PeerConnection.Observer的onIceCandidate()函数，
+        // 在回调函数里面将IceCandidate对象发送给对方
         mEvent.onSendIceCandidate(mUserId, candidate);
     }
 

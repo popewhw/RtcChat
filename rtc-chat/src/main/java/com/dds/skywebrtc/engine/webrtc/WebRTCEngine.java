@@ -181,6 +181,8 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
         if (peer != null) {
             SessionDescription sdp = new SessionDescription(SessionDescription.Type.OFFER, description);
             peer.setOffer(false);
+            //被呼叫方调用setRemoteDescription后，PeerConnection创建完成，
+            // 当网络候可用时，回调PeerConnection.Observer的onIceCandidate()函数等到回调
             peer.setRemoteDescription(sdp);
             peer.createAnswer();
         }
@@ -194,6 +196,8 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
         Peer peer = peers.get(userId);
         if (peer != null) {
             SessionDescription sessionDescription = new SessionDescription(SessionDescription.Type.ANSWER, sdp);
+            //呼叫方调用setRemoteDescription后，PeerConnection创建完成，
+            // 当网络候可用时，回调PeerConnection.Observer的onIceCandidate()函数等到回调
             peer.setRemoteDescription(sessionDescription);
         }
 
@@ -475,6 +479,23 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
         PeerConnection.IceServer var1 = PeerConnection.IceServer.builder("stun:stun.l.google.com:19302")
                 .createIceServer();
         iceServers.add(var1);
+
+        PeerConnection.IceServer var11x = PeerConnection.IceServer.builder("stun:stun.xyjsoft.online:3478?transport=udp")
+                .setUsername("xyjsoft")
+                .setPassword("xyjwork123")
+                .createIceServer();
+        PeerConnection.IceServer var12x = PeerConnection.IceServer.builder("turn:stun.xyjsoft.online:3478?transport=udp")
+                .setUsername("xyjsoft")
+                .setPassword("xyjwork123")
+                .createIceServer();
+        PeerConnection.IceServer var13x = PeerConnection.IceServer.builder("turn:stun.xyjsoft.online:3478?transport=tcp")
+                .setUsername("xyjsoft")
+                .setPassword("xyjwork123")
+                .createIceServer();
+
+        iceServers.add(var11x);
+        iceServers.add(var12x);
+        iceServers.add(var13x);
 
         PeerConnection.IceServer var11 = PeerConnection.IceServer.builder("stun:42.192.40.58:3478?transport=udp")
                 .createIceServer();
