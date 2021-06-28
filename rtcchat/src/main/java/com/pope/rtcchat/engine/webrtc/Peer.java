@@ -36,20 +36,23 @@ public class Peer implements SdpObserver, PeerConnection.Observer {
     private final List<PeerConnection.IceServer> mIceLis;
     private final IPeerEvent mEvent;
     private boolean isOffer;
+    /**设备id，2021-06-28whw新增，用于同账号多端登录*/
+    private String deviceId;
 
     public MediaStream _remoteStream;
     public SurfaceViewRenderer renderer;
     public ProxyVideoSink sink;
 
 
-    public Peer(PeerConnectionFactory factory, List<PeerConnection.IceServer> list, String userId, IPeerEvent event) {
+    public Peer(PeerConnectionFactory factory, List<PeerConnection.IceServer> list, String userId, IPeerEvent event,String deviceId) {
         mFactory = factory;
         mIceLis = list;
         mEvent = event;
         mUserId = userId;
         queuedRemoteCandidates = new ArrayList<>();
         this.pc = createPeerConnection();
-        Log.d("dds_test", "create Peer:" + mUserId);
+        this.deviceId = deviceId;
+        Log.d("dds_test", "create Peer:" + mUserId + ",DeviceId:"+ deviceId);
 
     }
 
@@ -71,6 +74,14 @@ public class Peer implements SdpObserver, PeerConnection.Observer {
         if (pc == null) return;
         Log.d("dds_test", "createOffer");
         pc.createOffer(this, offerOrAnswerConstraint());
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 
     // 创建answer

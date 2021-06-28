@@ -73,7 +73,7 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
     private static final int FPS = 20;
 
     // 对话实例列表
-    private ConcurrentHashMap<String, Peer> peers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, List<Peer>> peers = new ConcurrentHashMap<>();
     // 服务器实例列表
     private List<PeerConnection.IceServer> iceServers = new ArrayList<>();
 
@@ -113,13 +113,38 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
     public void joinRoom(List<String> userIds) {
         for (String id : userIds) {
             // create Peer
-
-            Peer peer = new Peer(_factory, iceServers, id, this);
-            peer.setOffer(false);
-            // add localStream
-            peer.addLocalStream(_localStream);
-            // 添加列表
-            peers.put(id, peer);
+            List<Peer> listPeer = peers.get(id);
+            if(listPeer == null){
+                listPeer = new ArrayList<>();
+            }
+            if(id.contains("&")){
+                String[] ids = id.split("&");
+                if(ids.length > 1){
+                    Peer peer = new Peer(_factory, iceServers, id, this,ids[1]);
+                    peer.setOffer(false);
+                    // add localStream
+                    peer.addLocalStream(_localStream);
+                    // 添加列表
+                    listPeer.add(peer);
+                    peers.put(ids[0], listPeer);
+                }else{
+                    Peer peer = new Peer(_factory, iceServers, id, this,"default");
+                    peer.setOffer(false);
+                    // add localStream
+                    peer.addLocalStream(_localStream);
+                    // 添加列表
+                    listPeer.add(peer);
+                    peers.put(id, listPeer);
+                }
+            }else{
+                Peer peer = new Peer(_factory, iceServers, id, this,"default");
+                peer.setOffer(false);
+                // add localStream
+                peer.addLocalStream(_localStream);
+                // 添加列表
+                listPeer.add(peer);
+                peers.put(id, listPeer);
+            }
         }
         if (mCallback != null) {
             mCallback.joinRoomSucc();
@@ -143,16 +168,68 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
     @Override
     public void userIn(String userId) {
         // create Peer
-        Peer peer = new Peer(_factory, iceServers, userId, this);
-        peer.setOffer(true);
-        // add localStream
-        peer.addLocalStream(_localStream);
-        // 添加列表
-        peers.put(userId, peer);
-        // createOffer
-        peer.createOffer();
-    }
+        List<Peer> listPeer = peers.get(userId);
+        if(listPeer == null){
+            listPeer = new ArrayList<>();
+        }
+        if(userId.contains("&")){
+            String[] userIds = userId.split("&");
+            if(userIds.length > 1){
+                Peer peer = new Peer(_factory, iceServers, userId, this,userIds[1]);
+                peer.setOffer(true);
+                // add localStream
+                peer.addLocalStream(_localStream);
+                // 添加列表
+                listPeer.add(peer);
+                peers.put(userIds[0], listPeer);
+                // createOffer
+                peer.createOffer();
+            }else{
+                Peer peer = new Peer(_factory, iceServers, userId, this,"default");
+                peer.setOffer(true);
+                // add localStream
+                peer.addLocalStream(_localStream);
+                // 添加列表
+                listPeer.add(peer);
+                peers.put(userId, listPeer);
+                // createOffer
+                peer.createOffer();
+            }
+        }else{
+            Peer peer = new Peer(_factory, iceServers, userId, this,"default");
+            peer.setOffer(true);
+            // add localStream
+            peer.addLocalStream(_localStream);
+            // 添加列表
+            listPeer.add(peer);
+            peers.put(userId, listPeer);
+            // createOffer
+            peer.createOffer();
+        }
 
+    }
+    private Peer getPeerByUserId2DeviceId(String userId,String deviceId){
+        if(peers != null && peers.size() > 0){
+            List<Peer> listPeer = peers.get(userId);
+            if(listPeer != null && listPeer.size() > 0){
+                Peer peerT = null;
+                for(Peer peer : listPeer){
+                    if(deviceId.equals(peer.getDeviceId())){
+                        peerT = peer;
+                        break;
+                    }
+                }
+                if(peerT == null && "default".equals(listPeer.get(0).getDeviceId())){
+                    peerT = listPeer.get(0);
+                }
+                return peerT;
+            }else {
+                return null;
+            }
+        }else {
+            return null;
+        }
+    }
     @Override
     public void userReject(String userId, int type) {
         //拒绝接听userId应该是没有添加进peers里去不需要remove
@@ -178,21 +255,33 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
 
     @Override
     public void receiveOffer(String userId, String description) {
-        Peer peer = peers.get(userId);
-        if (peer != null) {
+        String deviceid = "default";
+        if(userId.contains("&")){
+            String[] userIds = userId.split("&");
+            if(userIds.length > 1){
+                deviceid = userIds[1];
+            }
+        }
+        Peer peer = getPeerByUserId2DeviceId(userId,deviceid);
+        if(peer != null){
             SessionDescription sdp = new SessionDescription(SessionDescription.Type.OFFER, description);
             peer.setOffer(false);
             peer.setRemoteDescription(sdp);
             peer.createAnswer();
         }
-
-
     }
 
     @Override
     public void receiveAnswer(String userId, String sdp) {
         Log.d("dds_test", "receiveAnswer--" + userId);
-        Peer peer = peers.get(userId);
+        String deviceid = "default";
+        if(userId.contains("&")){
+            String[] userIds = userId.split("&");
+            if(userIds.length > 1){
+                deviceid = userIds[1];
+            }
+        }
+        Peer peer = getPeerByUserId2DeviceId(userId,deviceid);
         if (peer != null) {
             SessionDescription sessionDescription = new SessionDescription(SessionDescription.Type.ANSWER, sdp);
             peer.setRemoteDescription(sessionDescription);
@@ -204,7 +293,14 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
     @Override
     public void receiveIceCandidate(String userId, String id, int label, String candidate) {
         Log.d("dds_test", "receiveIceCandidate--" + userId);
-        Peer peer = peers.get(userId);
+        String deviceid = "default";
+        if(userId.contains("&")){
+            String[] userIds = userId.split("&");
+            if(userIds.length > 1){
+                deviceid = userIds[1];
+            }
+        }
+        Peer peer = getPeerByUserId2DeviceId(userId,deviceid);
         if (peer != null) {
             IceCandidate iceCandidate = new IceCandidate(id, label, candidate);
             peer.addRemoteIceCandidate(iceCandidate);
@@ -214,9 +310,11 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
 
     @Override
     public void leaveRoom(String userId) {
-        Peer peer = peers.get(userId);
-        if (peer != null) {
-            peer.close();
+        List<Peer> listPeer = peers.get(userId);
+        if (listPeer != null && listPeer.size() > 0) {
+            for(Peer peer : listPeer){
+                peer.close();
+            }
             peers.remove(userId);
         }
        Log.d(TAG, "leaveRoom peers.size() = " + peers.size() + "; mCallback = " + mCallback);
@@ -226,8 +324,10 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
                 mCallback.exitRoom();
             }
             if (peers.size() == 1) {
-                for (Map.Entry<String, Peer> set : peers.entrySet()) {
-                    set.getValue().close();
+                for (Map.Entry<String, List<Peer>> set : peers.entrySet()) {
+                    for(Peer peer : set.getValue()){
+                        peer.close();
+                    }
                 }
                 peers.clear();
             }
@@ -312,7 +412,14 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
             Log.e(TAG, "setupRemoteVideo userId is null ");
             return null;
         }
-        Peer peer = peers.get(userId);
+        String deviceid = "default";
+        if(userId.contains("&")){
+            String[] userIds = userId.split("&");
+            if(userIds.length > 1){
+                deviceid = userIds[1];
+            }
+        }
+        Peer peer = getPeerByUserId2DeviceId(userId,deviceid);
         if (peer == null) return null;
 
         if (peer.renderer == null) {
@@ -426,7 +533,7 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
             return false;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            AudioDeviceInfo[] audioDevices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL);
+            AudioDeviceInfo[] audioDevices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
             for (AudioDeviceInfo deviceInfo : audioDevices) {
                 if (deviceInfo.getType() == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
                         || deviceInfo.getType() == AudioDeviceInfo.TYPE_WIRED_HEADSET) {
@@ -446,8 +553,10 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
         }
         // 清空peer
         if (peers != null) {
-            for (Peer peer : peers.values()) {
-                peer.close();
+            for (List<Peer> listPeer : peers.values()) {
+                for(Peer peer : listPeer){
+                    peer.close();
+                }
             }
             peers.clear();
         }
