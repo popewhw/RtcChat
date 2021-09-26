@@ -477,6 +477,23 @@ public class WebRTCEngine implements IEngine, Peer.IPeerEvent {
                 .createIceServer();
         iceServers.add(var1);
 
+        PeerConnection.IceServer var01x = PeerConnection.IceServer.builder("stun:139.159.214.247:3478?transport=udp")
+                .setUsername("xyjsoft")
+                .setPassword("xyjwork123")
+                .createIceServer();
+        PeerConnection.IceServer var02x = PeerConnection.IceServer.builder("turn:139.159.214.247:3478?transport=udp")
+                .setUsername("xyjsoft")
+                .setPassword("xyjwork123")
+                .createIceServer();
+        PeerConnection.IceServer var03x = PeerConnection.IceServer.builder("turn:139.159.214.247:3478?transport=tcp")
+                .setUsername("xyjsoft")
+                .setPassword("xyjwork123")
+                .createIceServer();
+
+        iceServers.add(var01x);
+        iceServers.add(var02x);
+        iceServers.add(var03x);
+
         PeerConnection.IceServer var11x = PeerConnection.IceServer.builder("stun:stun.xyjsoft.online:3478?transport=udp")
                 .setUsername("xyjsoft")
                 .setPassword("xyjwork123")
